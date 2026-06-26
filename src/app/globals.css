@@ -1,1 +1,68 @@
 @import "tailwindcss";
+
+/* ============================================================
+   ICEBERG THEME — Single Source of Truth
+   Tailwind v4: @theme block registers CSS vars as Tailwind tokens
+   ============================================================ */
+
+@theme {
+  /* --- Raw Palette (Iceberg) --- */
+  --color-ice-0:   #0f1117;   /* deepest bg */
+  --color-ice-1:   #161822;   /* base bg */
+  --color-ice-2:   #1e2132;   /* surface */
+  --color-ice-3:   #272c42;   /* elevated surface */
+  --color-ice-4:   #3d425b;   /* border / subtle */
+  --color-ice-5:   #6b7089;   /* muted text */
+  --color-ice-6:   #a0a8cd;   /* secondary text */
+  --color-ice-7:   #c6c8d1;   /* primary text */
+  --color-ice-8:   #e8e9ec;   /* bright text */
+
+  /* --- Accent --- */
+  --color-ice-blue:   #89b8c2;  /* links, focus */
+  --color-ice-cyan:   #89b8c2;
+  --color-ice-green:  #b4be82;  /* success */
+  --color-ice-red:    #e27878;  /* danger */
+  --color-ice-yellow: #e2a478;  /* warning */
+  --color-ice-purple: #a093c7;  /* special */
+
+  /* --- Semantic Tokens --- */
+
+  /* Background */
+  --color-bg-base:     var(--color-ice-1);
+  --color-bg-surface:  var(--color-ice-2);
+  --color-bg-elevated: var(--color-ice-3);
+
+  /* Interactive */
+  --color-bg-hover:    var(--color-ice-3);
+  --color-bg-active:   var(--color-ice-4);
+  --color-bg-selected: var(--color-ice-3);
+
+  /* Text */
+  --color-text-primary:   var(--color-ice-7);
+  --color-text-secondary: var(--color-ice-6);
+  --color-text-muted:     var(--color-ice-5);
+
+  /* Border */
+  --color-border:        var(--color-ice-4);
+  --color-border-subtle: var(--color-ice-3);
+
+  /* Icon */
+  --color-icon-default: var(--color-ice-6);
+  --color-icon-active:  var(--color-ice-blue);
+  --color-icon-muted:   var(--color-ice-5);
+
+  /* Accent */
+  --color-accent:         var(--color-ice-blue);
+  --color-accent-success: var(--color-ice-green);
+  --color-accent-danger:  var(--color-ice-red);
+  --color-accent-warning: var(--color-ice-yellow);
+}
+
+/* ============================================================
+   Base styles
+   ============================================================ */
+
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+}

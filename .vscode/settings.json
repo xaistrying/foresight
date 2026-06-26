@@ -1,2 +1,5 @@
 {
+  // Tailwind v4 use @theme, @utility... — CSS validator doesn't understand so close it
+  "css.validate": false,
+  "css.lint.unknownAtRules": "ignore"
 }

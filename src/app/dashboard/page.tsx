@@ -1,10 +1,5 @@
-import React from 'react'
-
-const DashboardPage = () => {
-  return (
-    <div className="bg-gray-500">
-    </div>
-  )
+// Dashboard content is rendered persistently in RootLayout via MainContent.
+// This page intentionally renders nothing.
+export default function DashboardPage() {
+  return null;
 }
-
-export default DashboardPage

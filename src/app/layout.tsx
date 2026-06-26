@@ -1,4 +1,5 @@
 import Sidebar from "@/src/components/Sidebar";
+import MainContent from "@/src/components/MainContent";
 import "@/src/app/globals.css";
 
 export default function RootLayout({
@@ -8,9 +9,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="flex">
+      <body className="flex h-screen overflow-hidden">
         <Sidebar />
-        <main className="flex-1 p-6">{children}</main>
+        <MainContent>{children}</MainContent>
       </body>
     </html>
   );
