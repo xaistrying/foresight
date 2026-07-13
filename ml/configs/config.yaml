@@ -1,0 +1,7 @@
+aws:
+  region: ap-southeast-1
+
+athena:
+  database: txn_db
+  training_table: training_data
+  s3_output: s3://txns-dataset-bucket-560205085106-ap-southeast-1-an/athena-results/

@@ -1,0 +1,6 @@
+pandas
+awswrangler
+boto3
+pyyaml
+scikit-learn
+xgboost
