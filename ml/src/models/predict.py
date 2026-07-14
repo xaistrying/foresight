@@ -14,6 +14,7 @@ def build_lag_stats(recent_df: pd.DataFrame, group_cols: list) -> pd.DataFrame:
         txn_count=("txn_count", "mean"),
         avg_amount=("avg_amount", "mean"),
         schoolid=("schoolid", "first"),
+        paymentmode=("paymentmode", "first"),
         softype_encoded=("softype_encoded", "first"),
         paymentmode_encoded=("paymentmode_encoded", "first"),
     ).reset_index()

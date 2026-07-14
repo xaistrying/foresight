@@ -49,7 +49,7 @@ def build_training_features(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     """Full pipeline: outlier filter => time features => encode => lag. Order matters."""
     df = filter_outliers(df, config["features"]["outlier_percentile"])
     df = add_time_features(df, config["features"]["peak_hours"], config["features"]["weekend_days"])
-    df, le_sof, le_pay = encode_categoricals(df)
+    df = encode_categoricals(df)
     df = add_lag_features(df, config["features"]["group_cols"])
     df = df.dropna()
     return df
