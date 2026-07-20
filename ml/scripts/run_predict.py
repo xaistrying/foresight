@@ -19,7 +19,7 @@ def load_model_from_s3(config) -> XGBRegressor:
     local_path = "/tmp/model.json"
 
     s3 = boto3.client("s3")
-    s3.download_file(bucket, f"{prefix}revenue_model_latest.json", local_path)
+    s3.download_file(bucket, f"{prefix}revenue_model_champion.json", local_path)
 
     model = XGBRegressor()
     model.load_model(local_path)

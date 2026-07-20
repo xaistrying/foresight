@@ -1,5 +1,6 @@
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
+
+from src.features.category_mappings import SOFTYPE_MAPPING, PAYMENTMODE_MAPPING
 
 
 TARGET_COL = "total_revenue"
@@ -29,10 +30,16 @@ def add_time_features(df: pd.DataFrame, peak_hours: list, weekend_days: list) ->
 
 def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    le_sof = LabelEncoder()
-    le_pay = LabelEncoder()
-    df["softype_encoded"] = le_sof.fit_transform(df["softype"])
-    df["paymentmode_encoded"] = le_pay.fit_transform(df["paymentmode"])
+
+    unmapped_softype = set(df["softype"].unique()) - SOFTYPE_MAPPING.keys()
+    if unmapped_softype:
+        raise ValueError(f"Unmapped softype value(s): {unmapped_softype}")
+    unmapped_paymentmode = set(df["paymentmode"].unique()) - PAYMENTMODE_MAPPING.keys()
+    if unmapped_paymentmode:
+        raise ValueError(f"Unmapped paymentmode value(s): {unmapped_paymentmode}")
+
+    df["softype_encoded"] = df["softype"].map(SOFTYPE_MAPPING)
+    df["paymentmode_encoded"] = df["paymentmode"].map(PAYMENTMODE_MAPPING)
     return df
 
 

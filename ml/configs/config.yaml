@@ -10,6 +10,11 @@ s3:
   bucket: txns-dataset-bucket-560205085106-ap-southeast-1-an
   model_prefix: models/
 
+gate:
+  # Placeholder, unvalidated — no historical run variance to derive this from yet.
+  # Revisit once several months of real challenger/champion MAPE comparisons exist.
+  promotion_margin_pct: 0.05
+
 features:
   group_cols: [storeid, hour, softype]
   outlier_percentile: 0.99
