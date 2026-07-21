@@ -3,4 +3,4 @@ awswrangler
 boto3
 pyyaml
 scikit-learn
-xgboost
+xgboost==1.7.1

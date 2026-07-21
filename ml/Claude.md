@@ -15,6 +15,11 @@ ml/
 ├── Makefile
 ├── configs/config.yaml
 ├── requirements.txt
+├── pipeline/                          — SageMaker Processing Job launch code (runs OUTSIDE the container)
+│   ├── launch_processing_job.py       — stages source_dir, builds FrameworkProcessor, submits train/predict jobs
+│   └── entrypoints/
+│       ├── train.py                   — root-of-source_dir shim: from scripts.run_train import main
+│       └── predict.py                 — same, for run_predict; reads target_month from sys.argv[1]
 ├── scripts/
 │   ├── run_train.py          — load → train → evaluate → save
 │   └── run_predict.py        — load model → build future df → predict
@@ -31,6 +36,10 @@ ml/
     │   └── metrics.py                — evaluate_model()
     └── visualization/                — unused
 ```
+
+`pipeline/` vs `scripts/`: `pipeline/` code launches Processing Jobs (runs in JupyterLab, needs the `sagemaker` SDK, never runs inside the training container). `scripts/` code runs *inside* the container as the actual job. Keep this split — don't merge launch/orchestration code into `scripts/`.
+
+`pipeline/entrypoints/{train,predict}.py` still resolve `from scripts.run_train import main` etc. correctly despite living in a subfolder, because `FrameworkProcessor`'s `code=` path is relative to `source_dir`, and imports inside the entrypoint resolve against the container's working directory (`source_dir` root) — not against the entrypoint file's own location. Don't "simplify" these imports if refactoring; they're already correct.
 
 `src/` = pure functions only, no I/O, independently testable. `scripts/` = orchestration, I/O and side-effects allowed. Never put I/O in `src/`.
 
@@ -81,10 +90,19 @@ Confirmed real (not data-quality artifacts) and mapped: `CONCESSION`, `EZLINK`, 
 - `split_train_test`: `test` line once copy-pasted `<=` from `train` (should be `>`). Double-check the split condition if touching this function.
 - `encode_categoricals`: return type was once `tuple[df, encoder, encoder]` while callers expected just `df` — simplified to a single return value. Don't revert to multi-value returns here.
 - `s3_output` warning from `awswrangler`: not fixed, non-blocking, but always pass `s3_output` explicitly rather than relying on the default bucket.
+- `requirements.txt` pinned `xgboost==1.7.1` (was unpinned; local `.venv` had drifted to 3.3.0). This must stay a *validated* SageMaker XGBoost container version (see `pipeline/launch_processing_job.py`'s `FRAMEWORK_VERSION`) — training and serving need the same real XGBoost version. If bumping this, bump `FRAMEWORK_VERSION` in the same change and confirm the new version is in the SageMaker SDK's validated `framework_version` list first.
+
+## Execution environment — no local laptop execution
+
+**The developer's laptop cannot run these scripts** (insufficient compute for full-dataset feature engineering + XGBoost training). This is a hard constraint, not a preference:
+
+- There is no "run it locally on your machine to test" option for this project. Anywhere this file or a person says "run locally" / "test locally," it means **inside the SageMaker Studio/Unified Studio JupyterLab space** (a cloud-hosted environment with its own terminal and kernel) — never the developer's physical laptop.
+- This is the direct reason item #4 below (packaging as a SageMaker Processing Job) exists: it's not an optional productionization step, it's the only path to actually running full training/predict at all, since neither a laptop nor manual notebook cells scale to doing this repeatedly and reliably.
+- Do not suggest "just run `python3 -m scripts.run_train` on your laptop to debug this" as a troubleshooting step. Suggest running it in the JupyterLab terminal/kernel, or via a Processing Job, instead.
 
 ## Run & test
 
-- Run via `python3 -m scripts.run_train` (or `run_predict`) — **not** `python scripts/run_train.py` directly, so `src` resolves as a package (avoids `ModuleNotFoundError`).
+- Run via `python3 -m scripts.run_train` (or `run_predict`) — **not** `python scripts/run_train.py` directly, so `src` resolves as a package (avoids `ModuleNotFoundError`). This applies inside the JupyterLab environment (see Execution environment above), not a local laptop.
 - For testing individual functions, sample via `WHERE storeid IN (...)` on Athena. **Never `LIMIT N`** — random `LIMIT` breaks lag features since each group ends up with 1-2 rows, not enough for `shift(7)`.
 - No MLflow in `run_train.py`/`run_predict.py` (SQLite is lost when the SageMaker Processing Job container exits) — save model + metrics directly to S3 as JSON, plus timestamped versions per run (`revenue_model_<timestamp>.json`, `metrics_<timestamp>.json`, `test_set_<timestamp>.parquet`).
 - **`revenue_model_latest.json` / `metrics_latest.json` no longer exist / are not the served pointer.** `run_predict.py` loads `revenue_model_champion.json` — only written when a challenger passes the gate (see Champion/challenger gate below). Never point `run_predict.py` at a `_latest`/timestamped artifact directly; it must always go through the champion pointer.
@@ -95,12 +113,12 @@ Update when an item completes. Don't assume an item is done unless it's marked h
 
 | # | Item | Status |
 |---|---|---|
-| 1 | Confirm `category_mappings.py` is actually wired into `encode_categoricals` | ✅ Wired in `encode_categoricals`, raises `ValueError` on unmapped category |
-| 2 | Champion/challenger gate (re-predict champion on same test set) merged into `run_train.py` | ✅ Merged — see Champion/challenger gate section below |
-| 3 | `run_predict.py` run end-to-end, compared against old notebook results | ⏳ Never run as a script |
-| 4 | Package `run_train.py`/`run_predict.py` as a SageMaker Processing Job | ⏳ Not started |
-| 5 | Add `storeType` (FOOD/BOOK/DRINK) to feature set | ⏳ Value identified, not implemented |
-| 6 | Decide whether to keep `mlflow.db` for notebook dev | ⏳ Undecided |
+| 1 | Confirm `category_mappings.py` is actually wired into `encode_categoricals` | [DONE] Wired in `encode_categoricals`, raises `ValueError` on unmapped category |
+| 2 | Champion/challenger gate (re-predict champion on same test set) merged into `run_train.py` | [DONE] Merged — see Champion/challenger gate section below |
+| 3 | `run_predict.py` run end-to-end, compared against old notebook results | [WAITING] Never run as a script — must be run inside JupyterLab or as a Processing Job (laptop cannot run this; see Execution environment) |
+| 4 | Package `run_train.py`/`run_predict.py` as a SageMaker Processing Job | [WAITING] Launch code written (`pipeline/launch_processing_job.py` + `pipeline/entrypoints/`) but **never actually run** — laptop has no `sagemaker` SDK/AWS access to test. First real run must happen in JupyterLab; treat as unverified until then |
+| 5 | Add `storeType` (FOOD/BOOK/DRINK) to feature set | [WAITING] Value identified, not implemented |
+| 6 | Decide whether to keep `mlflow.db` for notebook dev | [WAITING] Undecided |
 
 ## Open decisions — do not decide unilaterally
 
